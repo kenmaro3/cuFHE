@@ -93,7 +93,7 @@ void GateBootstrappingTLWE2TRLWElvl01NTT(cuFHETRLWElvl1& out, Ctxt& in,
     cudaSetDevice(st.device_id());
     CtxtCopyH2D(in, st);
     BootstrapTLWE2TRLWE(out.trlwedevices[st.device_id()],
-                        in.tlwedevices[st.device_id()], TFHEpp::lvl1param::μ, st.st(),
+                        in.tlwedevices[st.device_id()], TFHEpp::lvl1param::mu, st.st(),
                         st.device_id());
     cudaMemcpyAsync(out.trlwehost.data(), out.trlwedevices[st.device_id()],
                     sizeof(out.trlwehost), cudaMemcpyDeviceToHost, st.st());
@@ -104,7 +104,7 @@ void gGateBootstrappingTLWE2TRLWElvl01NTT(cuFHETRLWElvl1& out, Ctxt& in,
 {
     cudaSetDevice(st.device_id());
     BootstrapTLWE2TRLWE(out.trlwedevices[st.device_id()],
-                        in.tlwedevices[st.device_id()], TFHEpp::lvl1param::μ, st.st(),
+                        in.tlwedevices[st.device_id()], TFHEpp::lvl1param::mu, st.st(),
                         st.device_id());
 }
 
@@ -115,7 +115,7 @@ void Refresh(cuFHETRLWElvl1& out, cuFHETRLWElvl1& in,
     cudaMemcpyAsync(in.trlwedevices[st.device_id()], in.trlwehost.data(),
                     sizeof(in.trlwehost), cudaMemcpyHostToDevice, st.st());
     SEIandBootstrap2TRLWE(out.trlwedevices[st.device_id()],
-                        in.trlwedevices[st.device_id()], TFHEpp::lvl1param::μ, st.st(),
+                        in.trlwedevices[st.device_id()], TFHEpp::lvl1param::mu, st.st(),
                         st.device_id());
     cudaMemcpyAsync(out.trlwehost.data(), out.trlwedevices[st.device_id()],
                     sizeof(out.trlwehost), cudaMemcpyDeviceToHost, st.st());
@@ -126,7 +126,7 @@ void gRefresh(cuFHETRLWElvl1& out, cuFHETRLWElvl1& in,
 {
     cudaSetDevice(st.device_id());
     BootstrapTLWE2TRLWE(out.trlwedevices[st.device_id()],
-                        in.trlwedevices[st.device_id()], TFHEpp::lvl1param::μ, st.st(),
+                        in.trlwedevices[st.device_id()], TFHEpp::lvl1param::mu, st.st(),
                         st.device_id());
 }
 

@@ -35,8 +35,8 @@ int main()
     for (int i = 0; i < kNumTests; i++) {
         p[i] = binary(engine) > 0;
         ct[i].tlwehost = TFHEpp::tlweSymEncrypt<TFHEpp::lvl0param>(
-            p[i] ? TFHEpp::lvl0param::μ : -TFHEpp::lvl0param::μ,
-            TFHEpp::lvl0param::α, sk->key.lvl0);
+            p[i] ? TFHEpp::lvl0param::mu : -TFHEpp::lvl0param::mu,
+            TFHEpp::lvl0param::alpha, sk->key.lvl0);
     }
     Synchronize();
     bool correct;

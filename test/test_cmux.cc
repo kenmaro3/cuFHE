@@ -62,10 +62,10 @@ int main()
 
     for (int i = 0; i < kNumTests; i++)
         for (int j = 0; j < TFHEpp::lvl1param::n; j++)
-            pmu1[i][j] = (p1[i][j] > 0) ? TFHEpp::lvl1param::μ : -TFHEpp::lvl1param::μ;
+            pmu1[i][j] = (p1[i][j] > 0) ? TFHEpp::lvl1param::mu : -TFHEpp::lvl1param::mu;
     for (int i = 0; i < kNumTests; i++)
         for (int j = 0; j < TFHEpp::lvl1param::n; j++)
-            pmu0[i][j] = (p0[i][j] > 0) ? TFHEpp::lvl1param::μ : -TFHEpp::lvl1param::μ;
+            pmu0[i][j] = (p0[i][j] > 0) ? TFHEpp::lvl1param::mu : -TFHEpp::lvl1param::mu;
 
     std::vector<cuFHETRGSWNTTlvl1> csd(kNumTests);
     std::vector<cuFHETRLWElvl1> c1(kNumTests);
@@ -76,11 +76,11 @@ int main()
     std::vector<TFHEpp::TRGSW<TFHEpp::lvl1param>> cs(kNumTests);
     for (int i = 0; i < kNumTests; i++)
         cs[i] =
-            trgswSymEncrypt<TFHEpp::lvl1param>(ps[i], TFHEpp::lvl1param::α, sk->key.lvl1);
+            trgswSymEncrypt<TFHEpp::lvl1param>(ps[i], TFHEpp::lvl1param::alpha, sk->key.lvl1);
     for (int i = 0; i <kNumTests; i++)
-        c1[i].trlwehost = trlweSymEncrypt<lvl1param>(pmu1[i], lvl1param::α, sk->key.lvl1);
+        c1[i].trlwehost = trlweSymEncrypt<lvl1param>(pmu1[i], lvl1param::alpha, sk->key.lvl1);
     for (int i = 0; i < kNumTests; i++)
-        c0[i].trlwehost = trlweSymEncrypt<lvl1param>(pmu0[i], lvl1param::α, sk->key.lvl1);
+        c0[i].trlwehost = trlweSymEncrypt<lvl1param>(pmu0[i], lvl1param::alpha, sk->key.lvl1);
     
 
     cout << "Number of tests:\t" << kNumTests << endl;

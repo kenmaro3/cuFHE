@@ -23,8 +23,8 @@ void Test(string type, Func func, Check check, vector<uint8_t>& pt,
     for (int i = 0; i < 4 * kNumTests; i++) {
         pt[i] = binary(engine) > 0;
         ct[i].tlwehost = TFHEpp::tlweSymEncrypt<TFHEpp::lvl0param>(
-            pt[i] ? TFHEpp::lvl0param::μ : -TFHEpp::lvl0param::μ,
-            TFHEpp::lvl0param::α, sk.key.lvl0);
+            pt[i] ? TFHEpp::lvl0param::mu : -TFHEpp::lvl0param::mu,
+            TFHEpp::lvl0param::alpha, sk.key.lvl0);
     }
 
     float et;

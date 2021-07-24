@@ -339,7 +339,7 @@ __global__ void __CMUXNTT__(TFHEpp::lvl1param::T* out, const FFP* const tgsw_ntt
 template <class P>
 __device__ inline void RotatedTestVector(TFHEpp::lvl1param::T* tlwe,
                                          const int32_t bar,
-                                         const typename P::T μ)
+                                         const typename P::T mu)
 {
     // volatile is needed to make register usage of Mux to 128.
     // Reference
@@ -350,11 +350,11 @@ __device__ inline void RotatedTestVector(TFHEpp::lvl1param::T* tlwe,
     for (int i = tid; i < P::n; i += bdim) {
         tlwe[i] = 0;  // part a
         if (bar == 2 * P::n)
-            tlwe[i + P::n] = μ;
+            tlwe[i + P::n] = mu;
         else {
             tlwe[i + P::n] = ((i < (bar & (P::n - 1))) ^ (bar >> P::nbit))
-                                 ? -μ
-                                 : μ;  // part b
+                                 ? -mu
+                                 : mu;  // part b
         }
     }
     __syncthreads();
@@ -632,7 +632,7 @@ __device__ inline void __HomGate__(TFHEpp::lvl0param::T* out,
             2 * lvl1param::n -
             modSwitchFromTorus<lvl1param>(offset + casign * in0[lvl0param::n] +
                                           cbsign * in1[lvl0param::n]);
-        RotatedTestVector<lvl1param>(tlwe, bar, lvl1param::μ);
+        RotatedTestVector<lvl1param>(tlwe, bar, lvl1param::mu);
     }
 
     // accumulate
@@ -651,7 +651,7 @@ __global__ void __NandBootstrap__(TFHEpp::lvl0param::T* out,
                                   TFHEpp::lvl0param::T* in1, FFP* bk,
                                   TFHEpp::lvl0param::T* ksk, CuNTTHandler<> ntt)
 {
-    __HomGate__<-1, -1, lvl0param::μ>(out, in0, in1, bk, ksk, ntt);
+    __HomGate__<-1, -1, lvl0param::mu>(out, in0, in1, bk, ksk, ntt);
 }
 
 __global__ void __NorBootstrap__(TFHEpp::lvl0param::T* out,
@@ -659,7 +659,7 @@ __global__ void __NorBootstrap__(TFHEpp::lvl0param::T* out,
                                  TFHEpp::lvl0param::T* in1, FFP* bk,
                                  TFHEpp::lvl0param::T* ksk, CuNTTHandler<> ntt)
 {
-    __HomGate__<-1, -1, -lvl0param::μ>(out, in0, in1, bk, ksk, ntt);
+    __HomGate__<-1, -1, -lvl0param::mu>(out, in0, in1, bk, ksk, ntt);
 }
 
 __global__ void __XnorBootstrap__(TFHEpp::lvl0param::T* out,
@@ -667,7 +667,7 @@ __global__ void __XnorBootstrap__(TFHEpp::lvl0param::T* out,
                                   TFHEpp::lvl0param::T* in1, FFP* bk,
                                   TFHEpp::lvl0param::T* ksk, CuNTTHandler<> ntt)
 {
-    __HomGate__<-2, -2, -2 * lvl0param::μ>(out, in0, in1, bk, ksk, ntt);
+    __HomGate__<-2, -2, -2 * lvl0param::mu>(out, in0, in1, bk, ksk, ntt);
 }
 
 __global__ void __AndBootstrap__(TFHEpp::lvl0param::T* out,
@@ -675,7 +675,7 @@ __global__ void __AndBootstrap__(TFHEpp::lvl0param::T* out,
                                  TFHEpp::lvl0param::T* in1, FFP* bk,
                                  TFHEpp::lvl0param::T* ksk, CuNTTHandler<> ntt)
 {
-    __HomGate__<1, 1, -lvl0param::μ>(out, in0, in1, bk, ksk, ntt);
+    __HomGate__<1, 1, -lvl0param::mu>(out, in0, in1, bk, ksk, ntt);
 }
 
 __global__ void __OrBootstrap__(TFHEpp::lvl0param::T* out,
@@ -683,7 +683,7 @@ __global__ void __OrBootstrap__(TFHEpp::lvl0param::T* out,
                                 TFHEpp::lvl0param::T* in1, FFP* bk,
                                 TFHEpp::lvl0param::T* ksk, CuNTTHandler<> ntt)
 {
-    __HomGate__<1, 1, lvl0param::μ>(out, in0, in1, bk, ksk, ntt);
+    __HomGate__<1, 1, lvl0param::mu>(out, in0, in1, bk, ksk, ntt);
 }
 
 __global__ void __XorBootstrap__(TFHEpp::lvl0param::T* out,
@@ -691,7 +691,7 @@ __global__ void __XorBootstrap__(TFHEpp::lvl0param::T* out,
                                  TFHEpp::lvl0param::T* in1, FFP* bk,
                                  TFHEpp::lvl0param::T* ksk, CuNTTHandler<> ntt)
 {
-    __HomGate__<2, 2, 2*lvl0param::μ>(out, in0, in1, bk, ksk, ntt);
+    __HomGate__<2, 2, 2*lvl0param::mu>(out, in0, in1, bk, ksk, ntt);
 }
 
 __global__ void __AndNYBootstrap__(TFHEpp::lvl0param::T* out,
@@ -700,7 +700,7 @@ __global__ void __AndNYBootstrap__(TFHEpp::lvl0param::T* out,
                                    TFHEpp::lvl0param::T* ksk,
                                    CuNTTHandler<> ntt)
 {
-    __HomGate__<-1, 1, -lvl0param::μ>(out, in0, in1, bk, ksk, ntt);
+    __HomGate__<-1, 1, -lvl0param::mu>(out, in0, in1, bk, ksk, ntt);
 }
 
 __global__ void __AndYNBootstrap__(TFHEpp::lvl0param::T* out,
@@ -709,7 +709,7 @@ __global__ void __AndYNBootstrap__(TFHEpp::lvl0param::T* out,
                                    TFHEpp::lvl0param::T* ksk,
                                    CuNTTHandler<> ntt)
 {
-    __HomGate__<1, -1, -lvl0param::μ>(out, in0, in1, bk, ksk, ntt);
+    __HomGate__<1, -1, -lvl0param::mu>(out, in0, in1, bk, ksk, ntt);
 }
 
 __global__ void __OrNYBootstrap__(TFHEpp::lvl0param::T* out,
@@ -717,7 +717,7 @@ __global__ void __OrNYBootstrap__(TFHEpp::lvl0param::T* out,
                                   TFHEpp::lvl0param::T* in1, FFP* bk,
                                   TFHEpp::lvl0param::T* ksk, CuNTTHandler<> ntt)
 {
-    __HomGate__<-1, 1, lvl0param::μ>(out, in0, in1, bk, ksk, ntt);
+    __HomGate__<-1, 1, lvl0param::mu>(out, in0, in1, bk, ksk, ntt);
 }
 
 __global__ void __OrYNBootstrap__(TFHEpp::lvl0param::T* out,
@@ -725,7 +725,7 @@ __global__ void __OrYNBootstrap__(TFHEpp::lvl0param::T* out,
                                   TFHEpp::lvl0param::T* in1, FFP* bk,
                                   TFHEpp::lvl0param::T* ksk, CuNTTHandler<> ntt)
 {
-    __HomGate__<1, -1, lvl0param::μ>(out, in0, in1, bk, ksk, ntt);
+    __HomGate__<1, -1, lvl0param::mu>(out, in0, in1, bk, ksk, ntt);
 }
 
 __global__ void __CopyBootstrap__(TFHEpp::lvl0param::T* out,
@@ -765,9 +765,9 @@ __global__ void __MuxBootstrap__(TFHEpp::lvl0param::T* out,
     // test vector: acc.a = 0; acc.b = vec(mu) * x ^ (in.b()/2048)
     register uint32_t bar =
         2 * lvl1param::n -
-        modSwitchFromTorus<lvl1param>(-lvl0param::μ + inc[lvl0param::n] +
+        modSwitchFromTorus<lvl1param>(-lvl0param::mu + inc[lvl0param::n] +
                                       in1[lvl0param::n]);
-    RotatedTestVector<lvl1param>(tlwe1, bar, lvl1param::μ);
+    RotatedTestVector<lvl1param>(tlwe1, bar, lvl1param::mu);
 
     // accumulate
     for (int i = 0; i < lvl0param::n; i++) {  // lvl1param::n iterations
@@ -777,10 +777,10 @@ __global__ void __MuxBootstrap__(TFHEpp::lvl0param::T* out,
     }
 
     bar = 2 * lvl1param::n -
-          modSwitchFromTorus<lvl1param>(-lvl0param::μ - inc[lvl0param::n] +
+          modSwitchFromTorus<lvl1param>(-lvl0param::mu - inc[lvl0param::n] +
                                         in0[lvl0param::n]);
 
-    RotatedTestVector<lvl1param>(tlwe0, bar, lvl1param::μ);
+    RotatedTestVector<lvl1param>(tlwe0, bar, lvl1param::mu);
 
     for (int i = 0; i < lvl0param::n; i++) {  // lvl1param::n iterations
         bar = modSwitchFromTorus<lvl1param>(0 - inc[i] + in0[i]);
@@ -794,7 +794,7 @@ __global__ void __MuxBootstrap__(TFHEpp::lvl0param::T* out,
     for (int i = tid; i <= lvl1param::n; i += bdim) {
         tlwe1[i] += tlwe0[i];
         if (i == lvl1param::n) {
-            tlwe1[lvl1param::n] += lvl1param::μ;
+            tlwe1[lvl1param::n] += lvl1param::mu;
         }
     }
 
@@ -823,9 +823,9 @@ __global__ void __NMuxBootstrap__(TFHEpp::lvl0param::T* out,
     // test vector: acc.a = 0; acc.b = vec(mu) * x ^ (in.b()/2048)
     register uint32_t bar =
         2 * lvl1param::n -
-        modSwitchFromTorus<lvl1param>(-lvl0param::μ + inc[lvl0param::n] +
+        modSwitchFromTorus<lvl1param>(-lvl0param::mu + inc[lvl0param::n] +
                                       in1[lvl0param::n]);
-    RotatedTestVector<lvl1param>(tlwe1, bar, lvl1param::μ);
+    RotatedTestVector<lvl1param>(tlwe1, bar, lvl1param::mu);
 
     // accumulate
     for (int i = 0; i < lvl0param::n; i++) {  // lvl1param::n iterations
@@ -835,10 +835,10 @@ __global__ void __NMuxBootstrap__(TFHEpp::lvl0param::T* out,
     }
 
     bar = 2 * lvl1param::n -
-          modSwitchFromTorus<lvl1param>(-lvl0param::μ - inc[lvl0param::n] +
+          modSwitchFromTorus<lvl1param>(-lvl0param::mu - inc[lvl0param::n] +
                                         in0[lvl0param::n]);
 
-    RotatedTestVector<lvl1param>(tlwe0, bar, lvl1param::μ);
+    RotatedTestVector<lvl1param>(tlwe0, bar, lvl1param::mu);
 
     for (int i = 0; i < lvl0param::n; i++) {  // lvl1param::n iterations
         bar = modSwitchFromTorus<lvl1param>(0 - inc[i] + in0[i]);
@@ -852,7 +852,7 @@ __global__ void __NMuxBootstrap__(TFHEpp::lvl0param::T* out,
     for (int i = tid; i <= lvl1param::n; i += bdim) {
         tlwe1[i] = -tlwe1[i]-tlwe0[i];
         if (i == lvl1param::n) {
-            tlwe1[lvl1param::n] -= lvl1param::μ;
+            tlwe1[lvl1param::n] -= lvl1param::mu;
         }
     }
 
