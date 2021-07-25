@@ -29,6 +29,7 @@
 #include <include/bootstrap_gpu.cuh>
 #include <include/details/error_gpu.cuh>
 #include <include/ntt_gpu/ntt.cuh>
+#include <include/encoder.cuh>
 #include <iostream>
 #include <limits>
 #include <vector>
@@ -145,6 +146,18 @@ __device__ inline typename P::T modSwitchFromTorus(const uint32_t phase)
     static_assert(32 >= Mbit, "Undefined modSwitchFromTorus!");
     return (phase + (1U << (31 - Mbit))) >> (32 - Mbit);
 }
+
+template <class P>
+__device__ inline typename P::T modSwitchFromTorusSpecific(const uint32_t phase, int domain_bp)
+{
+    //return std::round((double)phase/pow(2., domain_bp)*pow(2., target_bp));
+    //return (phase >> (domain_bp - target_bp - 1)) % (1UL << (target_bp + 1));
+    //return (phase >> (domain_bp - P::targetP::nbit - 1)) % (1UL << (P::targetP::nbit + 1));
+    uint32_t tmp = domain_bp - P::nbit - 1;
+    //*res = ((*phase + (1U << (tmp-1))) >> tmp) % (1UL<<(P::targetP::nbit + 1)); 
+    return ((phase + (1U << (tmp-1))) >> tmp) % (1UL<<(P::nbit + 1));
+}
+
 
 template <class P>
 __device__ inline void KeySwitch(typename P::targetP::T* lwe,
@@ -360,6 +373,56 @@ __device__ inline void RotatedTestVector(TFHEpp::lvl1param::T* tlwe,
     __syncthreads();
 }
 
+template <class P>
+__device__ inline void CustomTestVector2(TFHEpp::lvl1param::T* tlwe,
+                                         cufhe::EncoderDevice *encoder_domain,
+                                         cufhe::EncoderDevice *encoder_target,
+                                         double (*function)(double))
+{
+    // volatile is needed to make register usage of Mux to 128.
+    // Reference
+    // https://devtalk.nvidia.com/default/topic/466758/cuda-programming-and-performance/tricks-to-fight-register-pressure-or-how-i-got-down-from-29-to-15-registers-/
+    volatile const uint32_t tid = ThisThreadRankInBlock();
+    volatile const uint32_t bdim = ThisBlockSize();
+//#pragma unroll
+//    for (int i = tid; i < P::n; i += bdim) {
+//        tlwe[i] = 0;  // part a
+//        double tmp = encoder_domain->a + encoder_domain->d/2.*double(i)/double(P::n);
+//        //tlwe[i + P::n] = encoder_target->encode(function(tmp)); // part b
+//        tlwe[i + P::n] = encoder_target->encode(tmp); // part b
+//    }
+//    __syncthreads();
+#pragma unroll
+    for (int i = tid; i < P::n; i += bdim) {
+        tlwe[i] = 0;  // part a
+        //double tmp = encoder_domain->a + encoder_domain->d/2.*double(i)/double(P::n);
+        tlwe[i + P::n] = encoder_target->encode(-10);
+                             
+    }
+    __syncthreads();
+}
+
+template <class P>
+__device__ inline void CustomTestVector(TFHEpp::lvl1param::T* tlwe,
+                                         cufhe::EncoderDevice *encoder_domain,
+                                         cufhe::EncoderDevice *encoder_target,
+                                         double (*function)(double))
+{
+    // volatile is needed to make register usage of Mux to 128.
+    // Reference
+    // https://devtalk.nvidia.com/default/topic/466758/cuda-programming-and-performance/tricks-to-fight-register-pressure-or-how-i-got-down-from-29-to-15-registers-/
+    volatile const uint32_t tid = ThisThreadRankInBlock();
+    volatile const uint32_t bdim = ThisBlockSize();
+#pragma unroll
+    for (int i = tid; i < P::n; i += bdim) {
+        tlwe[i] = 0;  // part a
+        double tmp = encoder_domain->a + encoder_domain->d/2.*double(i)/double(P::n);
+        //tlwe[i + P::n] = encoder_target->encode(function(tmp)); // part b
+        tlwe[i + P::n] = encoder_target->encode(tmp); // part b
+    }
+    __syncthreads();
+}
+
 __device__ inline void PolynomialMulByXaiMinusOneAndDecomposition(
     FFP* decpoly, const TFHEpp::lvl1param::T* const poly, const uint32_t a_bar)
 {
@@ -529,6 +592,65 @@ __global__ void __Bootstrap__(TFHEpp::lvl0param::T* out,
     KeySwitch<lvl10param>(out, tlwe, ksk);
     __threadfence();
 }
+
+
+__global__ void __ProgrammableBootstrap__(TFHEpp::lvl0param::T* out,
+    TFHEpp::lvl0param::T* in,
+    cufhe::EncoderDevice *encoder_domain,
+    cufhe::EncoderDevice *encoder_target,
+    double (*function)(double),
+    const FFP* const bk,
+    const TFHEpp::lvl0param::T* const ksk,
+    const CuNTTHandler<> ntt)
+{
+    //  Assert(bk.k() == 1);
+    //  Assert(bk.l() == 2);
+    //  Assert(bk.n() == lvl1param::n);
+    __shared__ FFP sh[(2 + lvl1param::l + 1) * lvl1param::n];
+    FFP* sh_acc_ntt = &sh[0];
+    FFP* decpoly = &sh[2 * lvl1param::n];
+    // Use Last section to hold tlwe. This may to make these data in serial
+    TFHEpp::lvl1param::T* tlwe =
+    (TFHEpp::lvl1param::T*)&sh[(2 + lvl1param::l) * lvl1param::n];
+
+    // test vector
+    // acc.a = 0; acc.b = vec(mu) * x ^ (in.b()/2048)
+    {
+    //const uint32_t a_bar = 2 * lvl1param::n - modSwitchFromTorusSpecific<lvl1param>(in[lvl0param::n], encoder_domain->bp);
+    const uint32_t bar = 2 * lvl1param::n - modSwitchFromTorus<lvl1param>(in[lvl0param::n]);
+    CustomTestVector2<lvl1param>(tlwe, encoder_domain, encoder_target, function);
+    //RotatedTestVector<lvl1param>(tlwe, bar, 1U<<29);
+    //AccumuleteInitial(tlwe, sh_acc_ntt, decpoly, bar,
+    //           bk + (i << lvl1param::nbit) * 2 * 2 * lvl1param::l, ntt);
+
+    ////right now just want to see if this can work
+    //TFHEpp::lvl1param::T* poly = &tlwe[0];
+
+    //poly = &tlwe[lvl1param::n];
+    //for (int i = 0; i < lvl1param::n; i += 1) {
+    //    //lvl1param::T temp = poly[(i - bar) & (lvl1param::n - 1)];
+    //    //temp = ((i < (bar & (lvl1param::n - 1)) ^ (bar >> lvl1param::nbit)))
+    //    //? -temp
+    //    //: temp;
+    //    //temp = -temp;
+    //    //tlwe[lvl1param::n + i] = temp;
+    //    tlwe[lvl1param::n + i] = -tlwe[lvl1param::n + i];
+    //    }
+    }
+
+    // accumulate
+    for (int i = 0; i < lvl0param::n; i++) {  // n iterations
+        //const uint32_t bar = modSwitchFromTorusSpecific<lvl1param>(in[i], encoder_domain->bp);
+        const uint32_t bar = modSwitchFromTorus<lvl1param>(in[i]);
+        Accumulate(tlwe, sh_acc_ntt, decpoly, bar,
+        bk + (i << lvl1param::nbit) * 2 * 2 * lvl1param::l, ntt);
+    }
+
+    KeySwitch<lvl10param>(out, tlwe, ksk);
+    __threadfence();
+}
+
+
 
 __global__ void __SEandKS__(TFHEpp::lvl0param::T* out, TFHEpp::lvl1param::T* in,
                             FFP* bk, TFHEpp::lvl0param::T* ksk)
@@ -870,6 +992,16 @@ void Bootstrap(TFHEpp::lvl0param::T* out, TFHEpp::lvl0param::T* in,
         (out, in, mu, bk_ntts[gpuNum], ksk_devs[gpuNum], *ntt_handlers[gpuNum]);
     CuCheckError();
 }
+
+void ProgrammableBootstrap(TFHEpp::lvl0param::T* out, TFHEpp::lvl0param::T* in,
+    cudaStream_t st, const int gpuNum, EncoderDevice *encoder_domain, EncoderDevice *encoder_target, double (*function)(double))
+{
+    __ProgrammableBootstrap__<<<1, lvl1param::l * lvl1param::n>> NTT_THRED_UNITBIT, 0,
+        st>>>
+    (out, in, encoder_domain, encoder_target, function, bk_ntts[gpuNum], ksk_devs[gpuNum], *ntt_handlers[gpuNum]);
+    CuCheckError();
+}
+
 
 void SEandKS(TFHEpp::lvl0param::T* out, TFHEpp::lvl1param::T* in,
              cudaStream_t st, const int gpuNum)

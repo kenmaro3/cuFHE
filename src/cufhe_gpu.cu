@@ -27,6 +27,7 @@
 
 #include <include/cufhe_gpu.cuh>
 #include <include/details/allocator_gpu.cuh>
+#include <include/encoder.cuh>
 
 namespace cufhe {
 

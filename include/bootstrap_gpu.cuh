@@ -24,6 +24,7 @@
 
 #include "details/allocator_gpu.cuh"
 #include "cufhe_gpu.cuh"
+#include "encoder.cuh"
 
 #include <params.hpp>
 
@@ -41,6 +42,8 @@ void Bootstrap(TFHEpp::lvl0param::T* out, TFHEpp::lvl0param::T* in,
                TFHEpp::lvl1param::T mu, cudaStream_t st, const int gpuNum);
 void BootstrapTLWE2TRLWE(TFHEpp::lvl1param::T* out, TFHEpp::lvl0param::T* in,
                          TFHEpp::lvl1param::T mu, cudaStream_t st, const int gpuNum);
+void ProgrammableBootstrap(TFHEpp::lvl0param::T* out, TFHEpp::lvl0param::T* in,
+    cudaStream_t st, const int gpuNum, EncoderDevice *encoder_domain, EncoderDevice *encoder_target, double (*function)(double));
 void SEIandBootstrap2TRLWE(TFHEpp::lvl1param::T* out, TFHEpp::lvl1param::T* in,
                          lvl1param::T mu, cudaStream_t st, const int gpuNum);
 void SEandKS(TFHEpp::lvl0param::T* out, TFHEpp::lvl1param::T* in,
