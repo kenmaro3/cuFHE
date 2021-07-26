@@ -12,12 +12,6 @@ using namespace std;
 namespace cufhe {
 
 
-
-__device__ inline
-double my_identity_function_device(double x){
-    return x;
-}
-
 class EncoderDevice
 {
     public:
@@ -31,6 +25,7 @@ class EncoderDevice
         int bp;    // bit precision including noise bit (lvl0param::T - bp is padding bit)
         // bp = (noise bit + plaintext precision bit)
         bool is_type_second;
+        double mult_number;
 
 
         __device__
@@ -200,7 +195,28 @@ class EncoderDevice
             tmp_0_1 = tmp_0_1 - floor(tmp_0_1);
             return tmp_0_1 * this->d + this->a;
         }
+
+
+        __device__
+        double identity_function(double x){
+            return x;
+        }
+
+        __device__
+        double relu_function(double x){
+            return x >= 0 ? x : 0.; 
+        }
+
+        __device__
+        double sigmoid_function(double x){
+            return 1./(1.+pow(std::exp(1.0), x*(-1.))); 
+        }
         
+        __device__
+        double mult_function(double x){
+            assert(this->mult_number != NULL);
+            return x * this->mult_number; 
+        }
 
 }; // class Encoder
 

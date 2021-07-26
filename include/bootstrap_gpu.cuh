@@ -43,7 +43,7 @@ void Bootstrap(TFHEpp::lvl0param::T* out, TFHEpp::lvl0param::T* in,
 void BootstrapTLWE2TRLWE(TFHEpp::lvl1param::T* out, TFHEpp::lvl0param::T* in,
                          TFHEpp::lvl1param::T mu, cudaStream_t st, const int gpuNum);
 void ProgrammableBootstrap(TFHEpp::lvl0param::T* out, TFHEpp::lvl0param::T* in,
-    cudaStream_t st, const int gpuNum, EncoderDevice *encoder_domain, EncoderDevice *encoder_target, double (*function)(double));
+    cudaStream_t st, const int gpuNum, EncoderDevice *encoder_domain, EncoderDevice *encoder_target, int* function_type);
 void SEIandBootstrap2TRLWE(TFHEpp::lvl1param::T* out, TFHEpp::lvl1param::T* in,
                          lvl1param::T mu, cudaStream_t st, const int gpuNum);
 void SEandKS(TFHEpp::lvl0param::T* out, TFHEpp::lvl1param::T* in,

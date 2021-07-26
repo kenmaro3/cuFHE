@@ -374,39 +374,45 @@ __device__ inline void RotatedTestVector(TFHEpp::lvl1param::T* tlwe,
 }
 
 template <class P>
-__device__ inline void CustomTestVector2(TFHEpp::lvl1param::T* tlwe,
+__device__ inline void CustomTestVectorIdentity(TFHEpp::lvl1param::T* tlwe,
+                                         const uint32_t bar,
                                          cufhe::EncoderDevice *encoder_domain,
-                                         cufhe::EncoderDevice *encoder_target,
-                                         double (*function)(double))
+                                         cufhe::EncoderDevice *encoder_target)
 {
     // volatile is needed to make register usage of Mux to 128.
     // Reference
     // https://devtalk.nvidia.com/default/topic/466758/cuda-programming-and-performance/tricks-to-fight-register-pressure-or-how-i-got-down-from-29-to-15-registers-/
     volatile const uint32_t tid = ThisThreadRankInBlock();
     volatile const uint32_t bdim = ThisBlockSize();
-//#pragma unroll
-//    for (int i = tid; i < P::n; i += bdim) {
-//        tlwe[i] = 0;  // part a
-//        double tmp = encoder_domain->a + encoder_domain->d/2.*double(i)/double(P::n);
-//        //tlwe[i + P::n] = encoder_target->encode(function(tmp)); // part b
-//        tlwe[i + P::n] = encoder_target->encode(tmp); // part b
-//    }
-//    __syncthreads();
 #pragma unroll
     for (int i = tid; i < P::n; i += bdim) {
         tlwe[i] = 0;  // part a
-        //double tmp = encoder_domain->a + encoder_domain->d/2.*double(i)/double(P::n);
-        tlwe[i + P::n] = encoder_target->encode(-10);
-                             
+        // below is for part b
+        if(i>bar){
+            int index = (i-bar)%P::n;
+            double tmp_d = encoder_domain->a + encoder_domain->d/2.*double(index)/double(P::n);
+            tlwe[i + P::n] = encoder_target->encode(encoder_target->identity_function(tmp_d));
+        }else if(i<=bar && (bar-i)%(2*P::n) < P::n){
+            int index = (P::n - (bar-i))%P::n;
+            double tmp_d = encoder_domain->a + encoder_domain->d/2.*double(index)/double(P::n);
+            tlwe[i + P::n] = -encoder_target->encode(encoder_target->identity_function(tmp_d));
+
+        }else if(i<=bar && (bar-i)%(2*P::n) >= P::n){
+            int index = (P::n - (bar-i))%P::n;
+            double tmp_d = encoder_domain->a + encoder_domain->d/2.*double(index)/double(P::n);
+            tlwe[i + P::n] = encoder_target->encode(encoder_target->identity_function(tmp_d));
+        }else{
+            printf("exception check (i=%d, bar=%d)\n", i, bar);
+        }
     }
     __syncthreads();
 }
 
 template <class P>
-__device__ inline void CustomTestVector(TFHEpp::lvl1param::T* tlwe,
+__device__ inline void CustomTestVectorRelu(TFHEpp::lvl1param::T* tlwe,
+                                         const uint32_t bar,
                                          cufhe::EncoderDevice *encoder_domain,
-                                         cufhe::EncoderDevice *encoder_target,
-                                         double (*function)(double))
+                                         cufhe::EncoderDevice *encoder_target)
 {
     // volatile is needed to make register usage of Mux to 128.
     // Reference
@@ -416,12 +422,97 @@ __device__ inline void CustomTestVector(TFHEpp::lvl1param::T* tlwe,
 #pragma unroll
     for (int i = tid; i < P::n; i += bdim) {
         tlwe[i] = 0;  // part a
-        double tmp = encoder_domain->a + encoder_domain->d/2.*double(i)/double(P::n);
-        //tlwe[i + P::n] = encoder_target->encode(function(tmp)); // part b
-        tlwe[i + P::n] = encoder_target->encode(tmp); // part b
+        // below is for part b
+        if(i>bar){
+            int index = (i-bar)%P::n;
+            double tmp_d = encoder_domain->a + encoder_domain->d/2.*double(index)/double(P::n);
+            tlwe[i + P::n] = encoder_target->encode(encoder_target->relu_function(tmp_d));
+        }else if(i<=bar && (bar-i)%(2*P::n) < P::n){
+            int index = (P::n - (bar-i))%P::n;
+            double tmp_d = encoder_domain->a + encoder_domain->d/2.*double(index)/double(P::n);
+            tlwe[i + P::n] = -encoder_target->encode(encoder_target->relu_function(tmp_d));
+
+        }else if(i<=bar && (bar-i)%(2*P::n) >= P::n){
+            int index = (P::n - (bar-i))%P::n;
+            double tmp_d = encoder_domain->a + encoder_domain->d/2.*double(index)/double(P::n);
+            tlwe[i + P::n] = encoder_target->encode(encoder_target->relu_function(tmp_d));
+        }else{
+            printf("exception check (i=%d, bar=%d)\n", i, bar);
+        }
     }
     __syncthreads();
 }
+
+template <class P>
+__device__ inline void CustomTestVectorSigmoid(TFHEpp::lvl1param::T* tlwe,
+                                         const uint32_t bar,
+                                         cufhe::EncoderDevice *encoder_domain,
+                                         cufhe::EncoderDevice *encoder_target)
+{
+    // volatile is needed to make register usage of Mux to 128.
+    // Reference
+    // https://devtalk.nvidia.com/default/topic/466758/cuda-programming-and-performance/tricks-to-fight-register-pressure-or-how-i-got-down-from-29-to-15-registers-/
+    volatile const uint32_t tid = ThisThreadRankInBlock();
+    volatile const uint32_t bdim = ThisBlockSize();
+#pragma unroll
+    for (int i = tid; i < P::n; i += bdim) {
+        tlwe[i] = 0;  // part a
+        // below is for part b
+        if(i>bar){
+            int index = (i-bar)%P::n;
+            double tmp_d = encoder_domain->a + encoder_domain->d/2.*double(index)/double(P::n);
+            tlwe[i + P::n] = encoder_target->encode(encoder_target->sigmoid_function(tmp_d));
+        }else if(i<=bar && (bar-i)%(2*P::n) < P::n){
+            int index = (P::n - (bar-i))%P::n;
+            double tmp_d = encoder_domain->a + encoder_domain->d/2.*double(index)/double(P::n);
+            tlwe[i + P::n] = -encoder_target->encode(encoder_target->sigmoid_function(tmp_d));
+
+        }else if(i<=bar && (bar-i)%(2*P::n) >= P::n){
+            int index = (P::n - (bar-i))%P::n;
+            double tmp_d = encoder_domain->a + encoder_domain->d/2.*double(index)/double(P::n);
+            tlwe[i + P::n] = encoder_target->encode(encoder_target->sigmoid_function(tmp_d));
+        }else{
+            printf("exception check (i=%d, bar=%d)\n", i, bar);
+        }
+    }
+    __syncthreads();
+}
+
+template <class P>
+__device__ inline void CustomTestVectorMult(TFHEpp::lvl1param::T* tlwe,
+                                         const uint32_t bar,
+                                         cufhe::EncoderDevice *encoder_domain,
+                                         cufhe::EncoderDevice *encoder_target)
+{
+    // volatile is needed to make register usage of Mux to 128.
+    // Reference
+    // https://devtalk.nvidia.com/default/topic/466758/cuda-programming-and-performance/tricks-to-fight-register-pressure-or-how-i-got-down-from-29-to-15-registers-/
+    volatile const uint32_t tid = ThisThreadRankInBlock();
+    volatile const uint32_t bdim = ThisBlockSize();
+#pragma unroll
+    for (int i = tid; i < P::n; i += bdim) {
+        tlwe[i] = 0;  // part a
+        // below is for part b
+        if(i>bar){
+            int index = (i-bar)%P::n;
+            double tmp_d = encoder_domain->a + encoder_domain->d/2.*double(index)/double(P::n);
+            tlwe[i + P::n] = encoder_target->encode(encoder_target->mult_function(tmp_d));
+        }else if(i<=bar && (bar-i)%(2*P::n) < P::n){
+            int index = (P::n - (bar-i))%P::n;
+            double tmp_d = encoder_domain->a + encoder_domain->d/2.*double(index)/double(P::n);
+            tlwe[i + P::n] = -encoder_target->encode(encoder_target->mult_function(tmp_d));
+
+        }else if(i<=bar && (bar-i)%(2*P::n) >= P::n){
+            int index = (P::n - (bar-i))%P::n;
+            double tmp_d = encoder_domain->a + encoder_domain->d/2.*double(index)/double(P::n);
+            tlwe[i + P::n] = encoder_target->encode(encoder_target->mult_function(tmp_d));
+        }else{
+            printf("exception check (i=%d, bar=%d)\n", i, bar);
+        }
+    }
+    __syncthreads();
+}
+
 
 __device__ inline void PolynomialMulByXaiMinusOneAndDecomposition(
     FFP* decpoly, const TFHEpp::lvl1param::T* const poly, const uint32_t a_bar)
@@ -598,7 +689,7 @@ __global__ void __ProgrammableBootstrap__(TFHEpp::lvl0param::T* out,
     TFHEpp::lvl0param::T* in,
     cufhe::EncoderDevice *encoder_domain,
     cufhe::EncoderDevice *encoder_target,
-    double (*function)(double),
+    int* function_type,
     const FFP* const bk,
     const TFHEpp::lvl0param::T* const ksk,
     const CuNTTHandler<> ntt)
@@ -615,27 +706,17 @@ __global__ void __ProgrammableBootstrap__(TFHEpp::lvl0param::T* out,
 
     // test vector
     // acc.a = 0; acc.b = vec(mu) * x ^ (in.b()/2048)
-    {
-    //const uint32_t a_bar = 2 * lvl1param::n - modSwitchFromTorusSpecific<lvl1param>(in[lvl0param::n], encoder_domain->bp);
     const uint32_t bar = 2 * lvl1param::n - modSwitchFromTorus<lvl1param>(in[lvl0param::n]);
-    CustomTestVector2<lvl1param>(tlwe, encoder_domain, encoder_target, function);
-    //RotatedTestVector<lvl1param>(tlwe, bar, 1U<<29);
-    //AccumuleteInitial(tlwe, sh_acc_ntt, decpoly, bar,
-    //           bk + (i << lvl1param::nbit) * 2 * 2 * lvl1param::l, ntt);
-
-    ////right now just want to see if this can work
-    //TFHEpp::lvl1param::T* poly = &tlwe[0];
-
-    //poly = &tlwe[lvl1param::n];
-    //for (int i = 0; i < lvl1param::n; i += 1) {
-    //    //lvl1param::T temp = poly[(i - bar) & (lvl1param::n - 1)];
-    //    //temp = ((i < (bar & (lvl1param::n - 1)) ^ (bar >> lvl1param::nbit)))
-    //    //? -temp
-    //    //: temp;
-    //    //temp = -temp;
-    //    //tlwe[lvl1param::n + i] = temp;
-    //    tlwe[lvl1param::n + i] = -tlwe[lvl1param::n + i];
-    //    }
+    if(*function_type == 0){
+        CustomTestVectorIdentity<lvl1param>(tlwe, bar, encoder_domain, encoder_target);
+    }else if(*function_type == 1){
+        CustomTestVectorRelu<lvl1param>(tlwe, bar, encoder_domain, encoder_target);
+    }else if(*function_type == 2){
+        CustomTestVectorSigmoid<lvl1param>(tlwe, bar, encoder_domain, encoder_target);
+    }else if(*function_type == 3){
+        CustomTestVectorMult<lvl1param>(tlwe, bar, encoder_domain, encoder_target);
+    }else{
+        printf("exception called at function type\n");
     }
 
     // accumulate
@@ -994,11 +1075,11 @@ void Bootstrap(TFHEpp::lvl0param::T* out, TFHEpp::lvl0param::T* in,
 }
 
 void ProgrammableBootstrap(TFHEpp::lvl0param::T* out, TFHEpp::lvl0param::T* in,
-    cudaStream_t st, const int gpuNum, EncoderDevice *encoder_domain, EncoderDevice *encoder_target, double (*function)(double))
+    cudaStream_t st, const int gpuNum, EncoderDevice *encoder_domain, EncoderDevice *encoder_target, int* function_type)
 {
     __ProgrammableBootstrap__<<<1, lvl1param::l * lvl1param::n>> NTT_THRED_UNITBIT, 0,
         st>>>
-    (out, in, encoder_domain, encoder_target, function, bk_ntts[gpuNum], ksk_devs[gpuNum], *ntt_handlers[gpuNum]);
+    (out, in, encoder_domain, encoder_target, function_type, bk_ntts[gpuNum], ksk_devs[gpuNum], *ntt_handlers[gpuNum]);
     CuCheckError();
 }
 
