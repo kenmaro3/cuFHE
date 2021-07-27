@@ -43,17 +43,29 @@ class EncoderDevice
 
         }
 
-        //__device__
-        //static EncoderDevice copy(EncoderDevice &encoder){
-        //    
-        //    if(encoder.is_type_second){
-        //        Encoder tmp(encoder.a, abs(encoder.a), encoder.bp, encoder.is_type_second);
-        //        return tmp;
-        //    }else{
-        //        Encoder tmp(encoder.a, encoder.b, encoder.bp, encoder.is_type_second);
-        //        return tmp;
-        //    }
-        //}
+        __host__
+        static EncoderDevice copy(EncoderDevice &encoder){
+            
+            if(encoder.is_type_second){
+                EncoderDevice tmp(encoder.a, abs(encoder.a), encoder.bp, encoder.is_type_second);
+                return tmp;
+            }else{
+                EncoderDevice tmp(encoder.a, encoder.b, encoder.bp, encoder.is_type_second);
+                return tmp;
+            }
+        }
+
+        __host__
+        static EncoderDevice copy(EncoderDevice *encoder){
+            
+            if(encoder->is_type_second){
+                EncoderDevice tmp(encoder->a, abs(encoder->a), encoder->bp, encoder->is_type_second);
+                return tmp;
+            }else{
+                EncoderDevice tmp(encoder->a, encoder->b, encoder->bp, encoder->is_type_second);
+                return tmp;
+            }
+        }
 
         __device__
         EncoderDevice(){

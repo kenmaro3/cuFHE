@@ -27,3 +27,7 @@ add_executable(mytest mytest.cc)
 target_include_directories(mytest PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 target_link_libraries(mytest cufhe_gpu ${CUDA_LIBRARIES})
 
+add_executable(mytest2 mytest2.cc)
+target_include_directories(mytest2 PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+target_link_libraries(mytest2 cufhe_gpu ${CUDA_LIBRARIES})
+

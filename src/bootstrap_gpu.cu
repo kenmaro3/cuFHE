@@ -20,6 +20,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
+
 #include <bits/stdint-uintn.h>
 #include <include/cufhe.h>
 #include <stdio.h>
